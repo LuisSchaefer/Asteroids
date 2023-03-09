@@ -21,14 +21,21 @@ class SpaceRocks:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 64)
         self.message = ""
-        
+        #ToDo Gesammelte Punkte
+        self.score = 0
+        self.fontscore = pygame.font.SysFont(None, 12)
+        self.txtscore = "Highscore: 0"
+        #Objekte im Spiel
         self.asteroids = []
         self.bullets = []
         self.spaceship = Spaceship((400, 300), self.bullets.append)
 
+        #(Unter-)Menüs
         self.mainmenu = pygame_menu.Menu('Asteroids', 1200, 900, theme=themes.THEME_DARK)
         self.difficulty = pygame_menu.Menu('Select a Difficulty', 1200, 900, theme=themes.THEME_DARK)
         self.mode = pygame_menu.Menu('Select a Mode', 1200, 900, theme=themes.THEME_DARK)
+        #ToDo
+        self.pausemenu = pygame_menu.Menu('Pause', 1200, 900, theme=themes.THEME_DARK)
 
 
         self._menu()
@@ -45,7 +52,9 @@ class SpaceRocks:
 
             self.asteroids.append(Asteroid(position, self.asteroids.append))
 
-        # ToDo Anpassungen für Mode
+        if self.MODE == 2:
+            self.spaceship2 = Spaceship((400, 300), self.bullets.append)
+        # ToDo Anpassungen für
         self.main_loop()
 
     def main_loop(self):
@@ -64,10 +73,16 @@ class SpaceRocks:
                 quit()
             elif (
                 self.spaceship
+                and event.type == pygame.MOUSEBUTTONDOWN 
+            ):
+                self.spaceship.shoot()
+
+            if ( 
+                self.MODE == 2
                 and event.type == pygame.KEYDOWN
                 and event.key == pygame.K_SPACE
             ):
-                self.spaceship.shoot()
+                self.spaceship2.shoot()
 
         is_key_pressed = pygame.key.get_pressed()
 
@@ -82,6 +97,17 @@ class SpaceRocks:
             if is_key_pressed[pygame.K_UP]:
                 self.spaceship.accelerate()
 
+        if self.MODE == 2:
+            #ToDo Menu öffnen, wenn Escape gedrückt
+            if is_key_pressed[pygame.K_ESCAPE]:
+                self._pause()
+            if is_key_pressed[pygame.K_d]:
+                self.spaceship2.rotate(clockwise=True)
+            elif is_key_pressed[pygame.K_a]:
+                self.spaceship2.rotate(clockwise=False)
+            if is_key_pressed[pygame.K_w]:
+                self.spaceship2.accelerate()
+
     def _logic(self):
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
@@ -95,11 +121,22 @@ class SpaceRocks:
                     self._menu()
                     break
 
+        if self.MODE == 2:
+            for asteroid in self.asteroids:
+                if asteroid.collides_with(self.spaceship2):
+                    self.spaceship2 = None
+                    self.message = "You lost!"
+                    #ToDo
+                    self._menu()
+                    break
+
         for bullet in self.bullets[:]:
             for asteroid in self.asteroids[:]:
                 if asteroid.collides_with(bullet):
                     self.asteroids.remove(asteroid)
                     self.bullets.remove(bullet)
+                    #Score um 100 Pkt. erhöhen
+                    self.score = self.score + 100
                     #asteroid.split()
                     break
 
@@ -173,4 +210,6 @@ class SpaceRocks:
         if self.spaceship:
             game_objects.append(self.spaceship)
 
+        if self.MODE == 2:
+            game_objects.append(self.spaceship2)
         return game_objects
