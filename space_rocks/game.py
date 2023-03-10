@@ -2,15 +2,15 @@ import pygame, pygame_menu
 from pygame_menu import themes
 from models import Asteroid, Spaceship
 from utils import get_random_position, load_sprite, print_text
-
+from pygame import mixer
 from typing import Tuple, Any
-
+from pygame_menu import sound
 
 class SpaceRocks:
     MIN_ASTEROID_DISTANCE = 250
     DIFFICULTY = 5
     MODE = 1
-
+    COLOR = 'player_blue'
     def __init__(self):
         # Spiel initialisieren
         self._init_pygame()
@@ -28,12 +28,19 @@ class SpaceRocks:
         #Objekte im Spiel
         self.asteroids = []
         self.bullets = []
-        self.spaceship = Spaceship((400, 300), self.bullets.append)
 
+        #Hintergrundmusik initialisieren
+        mixer.init()
+        mixer.music.load('assets/sounds/background.ogg')
+        mixer.music.play()
+        #Ton im Menü
+        engine = sound.Sound()
+        engine.set_sound(sound.SOUND_TYPE_CLICK_MOUSE, 'assets/sounds/menu_click.wav')
         #(Unter-)Menüs
         self.mainmenu = pygame_menu.Menu('Asteroids', 1200, 900, theme=themes.THEME_DARK)
         self.difficulty = pygame_menu.Menu('Select a Difficulty', 1200, 900, theme=themes.THEME_DARK)
         self.mode = pygame_menu.Menu('Select a Mode', 1200, 900, theme=themes.THEME_DARK)
+        self.color = pygame_menu.Menu('Select Color of Player 1', 1200, 900, theme=themes.THEME_DARK)
         #ToDo
         self.pausemenu = pygame_menu.Menu('Pause', 1200, 900, theme=themes.THEME_DARK)
 
@@ -41,6 +48,8 @@ class SpaceRocks:
         self._menu()
 
     def _start_game(self):
+
+        self.spaceship = Spaceship((400, 300), self.bullets.append, self.COLOR)
         for _ in range(self.DIFFICULTY):
             while True:
                 position = get_random_position(self.screen)
@@ -53,7 +62,7 @@ class SpaceRocks:
             self.asteroids.append(Asteroid(position, self.asteroids.append))
 
         if self.MODE == 2:
-            self.spaceship2 = Spaceship((400, 300), self.bullets.append)
+            self.spaceship2 = Spaceship((400, 300), self.bullets.append, "player_turquoise")
         # ToDo Anpassungen für
         self.main_loop()
 
@@ -98,9 +107,6 @@ class SpaceRocks:
                 self.spaceship.accelerate()
 
         if self.MODE == 2:
-            #ToDo Menu öffnen, wenn Escape gedrückt
-            if is_key_pressed[pygame.K_ESCAPE]:
-                self._pause()
             if is_key_pressed[pygame.K_d]:
                 self.spaceship2.rotate(clockwise=True)
             elif is_key_pressed[pygame.K_a]:
@@ -116,18 +122,16 @@ class SpaceRocks:
             for asteroid in self.asteroids:
                 if asteroid.collides_with(self.spaceship):
                     self.spaceship = None
-                    self.message = "You lost!"
+                    self.message = "You lost! Your score: " + str(self.score)
                     #ToDo
-                    self._menu()
                     break
 
         if self.MODE == 2:
             for asteroid in self.asteroids:
                 if asteroid.collides_with(self.spaceship2):
                     self.spaceship2 = None
-                    self.message = "You lost!"
+                    self.message = "You lost! Your score: " + str(self.score)
                     #ToDo
-                    self._menu()
                     break
 
         for bullet in self.bullets[:]:
@@ -137,7 +141,6 @@ class SpaceRocks:
                     self.bullets.remove(bullet)
                     #Score um 100 Pkt. erhöhen
                     self.score = self.score + 100
-                    #asteroid.split()
                     break
 
         for bullet in self.bullets[:]:
@@ -145,9 +148,8 @@ class SpaceRocks:
                 self.bullets.remove(bullet)
 
         if not self.asteroids and self.spaceship:
-            self.message = "You won!"
+            self.message = "You won! Your score: " + str(self.score)
             #ToDo
-            self._menu()
 
     def _draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -172,12 +174,18 @@ class SpaceRocks:
     def difficulty_menu(self):
         self.mainmenu._open(self.difficulty)
         
+    def color_menu(self):
+        self.mainmenu._open(self.color)
+
     def set_difficulty(self, value, difficulty) -> None:
         #Anzahl der Asteroiden (= DIFFICULTY) ändern
         self.DIFFICULTY = difficulty
         
     def set_mode(self, value, mode) -> None:
         self.MODE = mode
+
+    def set_color(self, value, color) -> None:
+        self.COLOR = color
 
     def _menu(self):
         # https://coderslegacy.com/python/create-menu-screens-in-pygame-tutorial/?utm_content=cmp-true
@@ -187,10 +195,12 @@ class SpaceRocks:
         self.mainmenu.add.button('Play', self._start_game)
         self.mainmenu.add.button('Difficulty', self.difficulty_menu)
         self.mainmenu.add.button('Mode', self.mode_menu)
+        self.mainmenu.add.button('Color', self.color_menu)
         self.mainmenu.add.button('Quit', pygame_menu.events.EXIT)
 
         self.difficulty.add.selector('Difficulty :', [('Normal', 5), ('Hard', 8), ('Easy', 3)], onchange=self.set_difficulty)
         self.mode.add.selector('Mode :', [('Classic', 1), ('Two Players', 2), ('Endless', 3)], onchange=self.set_mode)
+        self.color.add.selector('Color of Player 1 :', [('Blue', 'player_blue'), ('Green', 'player_green'), ('Red', 'player_red'), ('Pink', 'player_pink')], onchange=self.set_color)
         while True:
             events = pygame.event.get()
             for event in events:

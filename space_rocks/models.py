@@ -30,13 +30,13 @@ class Spaceship(GameObject):
     ACCELERATION = 0.1
     BULLET_SPEED = 3
 
-    def __init__(self, position, create_bullet_callback):
+    def __init__(self, position, create_bullet_callback, color):
         self.create_bullet_callback = create_bullet_callback
         self.laser_sound = load_sound("laser")
         # Make a copy of the original UP vector
         self.direction = Vector2(UP)
 
-        super().__init__(position, load_sprite("spaceship"), Vector2(0))
+        super().__init__(position, load_sprite(color), Vector2(0))
 
     def rotate(self, clockwise=True):
         sign = 1 if clockwise else -1
