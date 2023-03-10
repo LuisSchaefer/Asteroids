@@ -3,14 +3,14 @@ from pygame_menu import themes
 from models import Asteroid, Spaceship
 from utils import get_random_position, load_sprite, print_text
 from pygame import mixer
-from typing import Tuple, Any
-from pygame_menu import sound
+import random
 
 class SpaceRocks:
     MIN_ASTEROID_DISTANCE = 250
     DIFFICULTY = 5
     MODE = 1
     COLOR = 'player_blue'
+    
     def __init__(self):
         # Spiel initialisieren
         self._init_pygame()
@@ -21,21 +21,20 @@ class SpaceRocks:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 64)
         self.message = ""
-        #ToDo Gesammelte Punkte
+        #Gesammelte Punkte
         self.score = 0
         self.fontscore = pygame.font.SysFont(None, 12)
         self.txtscore = "Highscore: 0"
         #Objekte im Spiel
         self.asteroids = []
         self.bullets = []
-
+        #Anzahl existierender Asteroiden im Spiel
+        self.existing_asteroids = 0
         #Hintergrundmusik initialisieren
         mixer.init()
         mixer.music.load('assets/sounds/background.ogg')
         mixer.music.play()
-        #Ton im Menü
-        engine = sound.Sound()
-        engine.set_sound(sound.SOUND_TYPE_CLICK_MOUSE, 'assets/sounds/menu_click.wav')
+
         #(Unter-)Menüs
         self.mainmenu = pygame_menu.Menu('Asteroids', 1200, 900, theme=themes.THEME_DARK)
         self.difficulty = pygame_menu.Menu('Select a Difficulty', 1200, 900, theme=themes.THEME_DARK)
@@ -60,6 +59,7 @@ class SpaceRocks:
                     break
 
             self.asteroids.append(Asteroid(position, self.asteroids.append))
+            self.existing_asteroids = self.existing_asteroids + 1
 
         if self.MODE == 2:
             self.spaceship2 = Spaceship((400, 300), self.bullets.append, "player_turquoise")
@@ -131,13 +131,13 @@ class SpaceRocks:
                 if asteroid.collides_with(self.spaceship2):
                     self.spaceship2 = None
                     self.message = "You lost! Your score: " + str(self.score)
-                    #ToDo
                     break
 
         for bullet in self.bullets[:]:
             for asteroid in self.asteroids[:]:
                 if asteroid.collides_with(bullet):
                     self.asteroids.remove(asteroid)
+                    self.existing_asteroids = self.existing_asteroids - 1
                     self.bullets.remove(bullet)
                     #Score um 100 Pkt. erhöhen
                     self.score = self.score + 100
@@ -149,7 +149,20 @@ class SpaceRocks:
 
         if not self.asteroids and self.spaceship:
             self.message = "You won! Your score: " + str(self.score)
-            #ToDo
+
+        if self.MODE == 3:
+            if random.randrange(0, 100) < self.DIFFICULTY*0.0000000001 and self.existing_asteroids < self.DIFFICULTY+2 and self.spaceship: # self.DIFFICULTY*5% chance every frame
+                while True:
+                    position = get_random_position(self.screen)
+                    if (
+                        position.distance_to(self.spaceship.position)
+                        > self.MIN_ASTEROID_DISTANCE
+                    ):
+                        break
+
+                self.asteroids.append(Asteroid(position, self.asteroids.append))
+                self.existing_asteroids = self.existing_asteroids + 1
+
 
     def _draw(self):
         self.screen.blit(self.background, (0, 0))
