@@ -2,7 +2,6 @@ import pygame, pygame_menu
 from pygame_menu import themes
 from models import Asteroid, Spaceship
 from highscore import Highscore
-from menu import Menu
 from utils import get_random_position, load_sprite, print_text, load_sound
 from pygame import mixer
 import random
@@ -27,15 +26,15 @@ class SpaceRocks:
         self.message = ""
         #Gesammelte Punkte
         self.score = 0
-        self.fontscore = pygame.font.SysFont(None, 12)
-        self.txtscore = "Highscore: 0"
+        self.fontscore = pygame.font.SysFont(None, 24)
+        self.txtscore = "Score: 0"
         #Objekte im Spiel
         self.asteroids = []
         self.bullets = []
         #Anzahl existierender Asteroiden im Spiel
         self.existing_asteroids = 0
         #Anzahl Leben
-        self.lives = 2
+        self.lives = 3
         #Hintergrundmusik initialisieren
         mixer.init()
         mixer.music.load('assets/sounds/background.ogg')
@@ -46,8 +45,6 @@ class SpaceRocks:
         self.mode = pygame_menu.Menu('Select a Mode', 1200, 900, theme=themes.THEME_DARK)
         self.color = pygame_menu.Menu('Select Color of Player 1', 1200, 900, theme=themes.THEME_DARK)
         self.highscoreMenu = pygame_menu.Menu('Highscores', 1200, 900, theme=themes.THEME_DARK)
-        #ToDo
-        self.pausemenu = pygame_menu.Menu('Pause', 1200, 900, theme=themes.THEME_DARK)
 
         self.highscore = Highscore(self.HIGHSCORE_FILE)
         self._menu()
@@ -103,9 +100,6 @@ class SpaceRocks:
         is_key_pressed = pygame.key.get_pressed()
 
         if self.spaceship:
-            #ToDo Menu öffnen, wenn Escape gedrückt
-            if is_key_pressed[pygame.K_ESCAPE]:
-                self._pause()
             if is_key_pressed[pygame.K_RIGHT]:
                 self.spaceship.rotate(clockwise=True)
             elif is_key_pressed[pygame.K_LEFT]:
@@ -169,7 +163,10 @@ class SpaceRocks:
 
     def _draw(self):
         self.screen.blit(self.background, (0, 0))
-
+        label_score = self.fontscore.render("Score: " + str(self.score), 1, (255,255,0))
+        label_lives = self.fontscore.render("Lives: " + str(self.lives), 1, (255,255,0))
+        self.screen.blit(label_lives, (0, 24))
+        self.screen.blit(label_score, (0, 0))
         for game_object in self._get_game_objects():
             game_object.draw(self.screen)
 
@@ -182,10 +179,12 @@ class SpaceRocks:
     def _hitPlayer(self, player):
         for asteroid in self.asteroids:
             if asteroid.collides_with(player):
+                pygame.draw.rect(self.screen, (255,0,0), pygame.Rect(0,0,1200,900))
+                pygame.display.flip()
+                pygame.time.delay(100)
                 self.asteroids.remove(asteroid)
                 self.existing_asteroids = self.existing_asteroids - 1
                 self.lives = self.lives - 1
-                print(self.lives)
                 load_sound("destroy").play()                    
                 if (self.lives == 0):
                     player = None
@@ -195,11 +194,6 @@ class SpaceRocks:
                     else:
                         self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
                     break
-
-    def _pause(self):
-        #ToDo hier entsteht die pause
-        print("pause")
-
 	
     def mode_menu(self):
         self.mainmenu._open(self.mode)
