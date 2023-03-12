@@ -1,6 +1,7 @@
 import pygame, pygame_menu
 from pygame_menu import themes
 from models import Asteroid, Spaceship
+from highscore import Highscore
 from utils import get_random_position, load_sprite, print_text
 from pygame import mixer
 import random
@@ -10,6 +11,7 @@ class SpaceRocks:
     DIFFICULTY = 5
     MODE = 1
     COLOR = 'player_blue'
+    HIGHSCORE_FILE = "highscore.txt"
     
     def __init__(self):
         # Spiel initialisieren
@@ -34,7 +36,6 @@ class SpaceRocks:
         mixer.init()
         mixer.music.load('assets/sounds/background.ogg')
         mixer.music.play()
-
         #(Unter-)Menüs
         self.mainmenu = pygame_menu.Menu('Asteroids', 1200, 900, theme=themes.THEME_DARK)
         self.difficulty = pygame_menu.Menu('Select a Difficulty', 1200, 900, theme=themes.THEME_DARK)
@@ -43,8 +44,10 @@ class SpaceRocks:
         #ToDo
         self.pausemenu = pygame_menu.Menu('Pause', 1200, 900, theme=themes.THEME_DARK)
 
+        self.highscore = Highscore(self.HIGHSCORE_FILE)
 
         self._menu()
+
 
     def _start_game(self):
 
@@ -122,15 +125,20 @@ class SpaceRocks:
             for asteroid in self.asteroids:
                 if asteroid.collides_with(self.spaceship):
                     self.spaceship = None
-                    self.message = "You lost! Your score: " + str(self.score)
-                    #ToDo
+                    if (self.highscore.checkScore(self.score)):
+                        self.message = "You lost! New highscore: " + str(self.score)
+                    else:
+                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighScore())
                     break
 
         if self.MODE == 2:
             for asteroid in self.asteroids:
                 if asteroid.collides_with(self.spaceship2):
                     self.spaceship2 = None
-                    self.message = "You lost! Your score: " + str(self.score)
+                    if (self.highscore.checkScore(self.score)):
+                        self.message = "You lost! New highscore: " + str(self.score)
+                    else:
+                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighScore())
                     break
 
         for bullet in self.bullets[:]:
@@ -148,8 +156,10 @@ class SpaceRocks:
                 self.bullets.remove(bullet)
 
         if not self.asteroids and self.spaceship:
-            self.message = "You won! Your score: " + str(self.score)
-
+            if (self.highscore.checkScore(self.score)):
+                self.message = "You won! New highscore: " + str(self.score)
+            else:
+                self.message = "You won! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighScore())
         if self.MODE == 3:
             if random.randrange(0, 100) < self.DIFFICULTY*0.0000000001 and self.existing_asteroids < self.DIFFICULTY+2 and self.spaceship: # self.DIFFICULTY*5% chance every frame
                 while True:
