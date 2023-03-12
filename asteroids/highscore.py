@@ -30,3 +30,8 @@ class Highscore:
 
     def getHighestScore (self):
         return self.highscore[0][1]
+    
+    def getAllHighScores(self):
+        output = str(self.highscore[0][0]) + "\t" + str(self.highscore[0][1]) + "\n" + str(self.highscore[1][0]) + "\t" + str(self.highscore[1][1]) + "\n" + str(self.highscore[2][0]) + "\t" + str(self.highscore[2][1]) + "\n" + str(self.highscore[3][0]) + "\t" + str(self.highscore[3][1]) + "\n" + str(self.highscore[4][0]) + "\t" + str(self.highscore[4][1])
+        return output
+            

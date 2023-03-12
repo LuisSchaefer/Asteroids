@@ -2,7 +2,8 @@ import pygame, pygame_menu
 from pygame_menu import themes
 from models import Asteroid, Spaceship
 from highscore import Highscore
-from utils import get_random_position, load_sprite, print_text
+from menu import Menu
+from utils import get_random_position, load_sprite, print_text, load_sound
 from pygame import mixer
 import random
 
@@ -33,6 +34,8 @@ class SpaceRocks:
         self.bullets = []
         #Anzahl existierender Asteroiden im Spiel
         self.existing_asteroids = 0
+        #Anzahl Leben
+        self.lives = 2
         #Hintergrundmusik initialisieren
         mixer.init()
         mixer.music.load('assets/sounds/background.ogg')
@@ -42,11 +45,11 @@ class SpaceRocks:
         self.difficulty = pygame_menu.Menu('Select a Difficulty', 1200, 900, theme=themes.THEME_DARK)
         self.mode = pygame_menu.Menu('Select a Mode', 1200, 900, theme=themes.THEME_DARK)
         self.color = pygame_menu.Menu('Select Color of Player 1', 1200, 900, theme=themes.THEME_DARK)
+        self.highscoreMenu = pygame_menu.Menu('Highscores', 1200, 900, theme=themes.THEME_DARK)
         #ToDo
         self.pausemenu = pygame_menu.Menu('Pause', 1200, 900, theme=themes.THEME_DARK)
 
         self.highscore = Highscore(self.HIGHSCORE_FILE)
-
         self._menu()
 
 
@@ -123,30 +126,15 @@ class SpaceRocks:
             game_object.move(self.screen)
 
         if self.spaceship:
-            for asteroid in self.asteroids:
-                if asteroid.collides_with(self.spaceship):
-                    self.spaceship = None
-                    self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
-                    if (self.highscore.getHighestScore() < self.score):
-                        self.message = "You lost! New highscore: " + str(self.score)
-                    else:
-                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
-                    break
+            self._hitPlayer(self.spaceship)
 
         if self.MODE == 2:
-            for asteroid in self.asteroids:
-                if asteroid.collides_with(self.spaceship2):
-                    self.spaceship2 = None
-                    self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
-                    if (self.highscore.getHighestScore() < self.score):
-                        self.message = "You lost! New highscore: " + str(self.score)
-                    else:
-                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
-                    break
+            self._hitPlayer(self.spaceship2)
 
         for bullet in self.bullets[:]:
             for asteroid in self.asteroids[:]:
                 if asteroid.collides_with(bullet):
+                    load_sound("destroy").play()
                     self.asteroids.remove(asteroid)
                     self.existing_asteroids = self.existing_asteroids - 1
                     self.bullets.remove(bullet)
@@ -191,6 +179,23 @@ class SpaceRocks:
         pygame.display.flip()
         self.clock.tick(60)
 
+    def _hitPlayer(self, player):
+        for asteroid in self.asteroids:
+            if asteroid.collides_with(player):
+                self.asteroids.remove(asteroid)
+                self.existing_asteroids = self.existing_asteroids - 1
+                self.lives = self.lives - 1
+                print(self.lives)
+                load_sound("destroy").play()                    
+                if (self.lives == 0):
+                    player = None
+                    self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
+                    if (self.highscore.getHighestScore() < self.score):
+                        self.message = "You lost! New highscore: " + str(self.score)
+                    else:
+                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
+                    break
+
     def _pause(self):
         #ToDo hier entsteht die pause
         print("pause")
@@ -205,6 +210,9 @@ class SpaceRocks:
     def color_menu(self):
         self.mainmenu._open(self.color)
 
+    def highscore_menu(self):
+        self.mainmenu._open(self.highscoreMenu)
+
     def set_difficulty(self, value, difficulty) -> None:
         #Anzahl der Asteroiden (= DIFFICULTY) ändern
         self.DIFFICULTY = difficulty
@@ -218,19 +226,18 @@ class SpaceRocks:
     def setPlayerName(self, name) -> None:
         self.PLAYERNAME = name
     def _menu(self):
-        # https://coderslegacy.com/python/create-menu-screens-in-pygame-tutorial/?utm_content=cmp-true
-        # https://pygame-menu.readthedocs.io/en/3.0.1/_source/create_menu.html
-        # https://pygame-menu.readthedocs.io/en/3.4.4/_source/gallery.html
         self.mainmenu.add.text_input('Name: ', default='user', maxchar=20, onchange= self.setPlayerName)
         self.mainmenu.add.button('Play', self._start_game)
         self.mainmenu.add.button('Difficulty', self.difficulty_menu)
         self.mainmenu.add.button('Mode', self.mode_menu)
         self.mainmenu.add.button('Color', self.color_menu)
+        self.mainmenu.add.button('Highscore', self.highscore_menu)
         self.mainmenu.add.button('Quit', pygame_menu.events.EXIT)
 
         self.difficulty.add.selector('Difficulty :', [('Normal', 5), ('Hard', 8), ('Easy', 3)], onchange=self.set_difficulty)
-        self.mode.add.selector('Mode :', [('Classic', 1), ('Two Players', 2), ('Endless', 3)], onchange=self.set_mode)
+        self.mode.add.selector('Mode :', [('Classic', 1), ('Two Players (Cooperative)', 2), ('Endless', 3)], onchange=self.set_mode)
         self.color.add.selector('Color of Player 1 :', [('Blue', 'player_blue'), ('Green', 'player_green'), ('Red', 'player_red'), ('Pink', 'player_pink')], onchange=self.set_color)
+        self.highscoreMenu.add.label("Playername\tScore \n" + self.highscore.getAllHighScores())
         while True:
             events = pygame.event.get()
             for event in events:

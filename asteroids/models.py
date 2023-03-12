@@ -12,8 +12,6 @@ class GameObject:
         self.sprite = sprite
         self.radius = sprite.get_width() / 2
         self.velocity = Vector2(velocity)
-        #ToDo der Sound muss noch verwendet werden
-        self.destroy_sound = load_sound("destroy")
 
     def draw(self, surface):
         blit_position = self.position - Vector2(self.radius)
