@@ -12,6 +12,7 @@ class SpaceRocks:
     MODE = 1
     COLOR = 'player_blue'
     HIGHSCORE_FILE = "highscore.txt"
+    PLAYERNAME = "user"
     
     def __init__(self):
         # Spiel initialisieren
@@ -125,20 +126,22 @@ class SpaceRocks:
             for asteroid in self.asteroids:
                 if asteroid.collides_with(self.spaceship):
                     self.spaceship = None
-                    if (self.highscore.checkScore(self.score)):
+                    self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
+                    if (self.highscore.getHighestScore() < self.score):
                         self.message = "You lost! New highscore: " + str(self.score)
                     else:
-                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighScore())
+                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
                     break
 
         if self.MODE == 2:
             for asteroid in self.asteroids:
                 if asteroid.collides_with(self.spaceship2):
                     self.spaceship2 = None
-                    if (self.highscore.checkScore(self.score)):
+                    self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
+                    if (self.highscore.getHighestScore() < self.score):
                         self.message = "You lost! New highscore: " + str(self.score)
                     else:
-                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighScore())
+                        self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
                     break
 
         for bullet in self.bullets[:]:
@@ -156,10 +159,12 @@ class SpaceRocks:
                 self.bullets.remove(bullet)
 
         if not self.asteroids and self.spaceship:
-            if (self.highscore.checkScore(self.score)):
+            self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
+            if (self.highscore.getHighestScore() < self.score):
                 self.message = "You won! New highscore: " + str(self.score)
             else:
-                self.message = "You won! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighScore())
+                self.message = "You won! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
+
         if self.MODE == 3:
             if random.randrange(0, 100) < self.DIFFICULTY*0.0000000001 and self.existing_asteroids < self.DIFFICULTY+2 and self.spaceship: # self.DIFFICULTY*5% chance every frame
                 while True:
@@ -210,11 +215,13 @@ class SpaceRocks:
     def set_color(self, value, color) -> None:
         self.COLOR = color
 
+    def setPlayerName(self, name) -> None:
+        self.PLAYERNAME = name
     def _menu(self):
         # https://coderslegacy.com/python/create-menu-screens-in-pygame-tutorial/?utm_content=cmp-true
         # https://pygame-menu.readthedocs.io/en/3.0.1/_source/create_menu.html
         # https://pygame-menu.readthedocs.io/en/3.4.4/_source/gallery.html
-        self.mainmenu.add.text_input('Name: ', default='user', maxchar=20)
+        self.mainmenu.add.text_input('Name: ', default='user', maxchar=20, onchange= self.setPlayerName)
         self.mainmenu.add.button('Play', self._start_game)
         self.mainmenu.add.button('Difficulty', self.difficulty_menu)
         self.mainmenu.add.button('Mode', self.mode_menu)

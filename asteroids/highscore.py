@@ -1,27 +1,32 @@
 from os import path
-
+from operator import itemgetter
+import json
 
 class Highscore:
     def __init__(self, file) -> None:
         self.data = file
         self.dir = path.dirname(__file__)
-        with open(path.join(self.dir, file), 'r') as f:
-            try:
-                self.highscore = int(f.read())
-            except:
-                self.highscore = 0
       
-    def checkScore (self, score):
+        with open (path.join(file), 'r') as f:
+            try:
+                self.highscore = json.load(f)
+
+            except:
+                self.highscore = [
+                    ('none', 0)
+                ]
+    def checkScore (self, name, score):
        if score > self.highscore:
-            self.setNewHighScore(score)
+            self.setNewHighScore(name, score)
             return True
        else:
            return False
     
-    def setNewHighScore(self, score):
-            self.highscore = score
-            with open(path.join(self.dir, self.data), 'w') as f:
-                f.write(str(score))
+    def setNewHighScore(self, name, score):
+        self.highscore.append((name, score))
+        self.highscore = sorted(self.highscore, key = itemgetter(1), reverse= True)[:5]
+        with open(self.data, 'w') as f:
+            json.dump(self.highscore, f)
 
-    def getHighScore (self):
-        return self.highscore
+    def getHighestScore (self):
+        return self.highscore[0][1]
