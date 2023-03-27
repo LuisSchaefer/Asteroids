@@ -6,7 +6,7 @@ from os import path
 from operator import itemgetter
 import json
 
-#ToDo in game.py alles ändern, dass Objekt Menu initialisiert wird, statt alle Fkt in game.py zu haben
+#Menü Klasse
 class Menu:
     def __init__(self, screen) -> None:
         self.screen = screen
