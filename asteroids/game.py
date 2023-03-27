@@ -1,18 +1,14 @@
 import pygame, pygame_menu
 from pygame_menu import themes
 from models import Enemy, Player
-from highscore import Highscore
+from gamesettings import Menu, Highscore
 from utils import get_random_position, load_sprite, print_text, load_sound
 from pygame import mixer
 import random
 
 class Asteroids:
     MIN_ENEMY_DISTANCE = 250
-    DIFFICULTY = 5
-    MODE = 1
-    COLOR_PLAYER1 = 'player_blue'
     HIGHSCORE_FILE = "highscore.txt"
-    PLAYERNAME = "user"
     
     def __init__(self):
         # Spiel initialisieren
@@ -35,30 +31,35 @@ class Asteroids:
         self.existing_enemies = 0
         #Anzahl Leben
         self.lives = 3
+        #Alle Einstellungen für das Spiel in einem Array speichern, siehe gamesettings.py
+        #settings[0] = Beginnt das Spiel? True/False
+        #settings[1] = Spielername? String
+        #settings[2] = Farbe Spieler1? String (Dateiname Bilddatei)
+        #settings[3] = Welcher Modus? int (0-2)
+        #settings[4] = Welcher Schwierigkeitsgrad? int 3,5,8
+        self.settings = [0, 0, 0, 0, 0]
+
         #Hintergrundmusik initialisieren
         mixer.init()
         mixer.music.load('assets/sounds/background.ogg')
         mixer.music.play()
-        #(Unter-)Menüs
-        self.mainMenu = pygame_menu.Menu('Asteroids', 1200, 900, theme=themes.THEME_DARK)
-        self.difficultyMenu = pygame_menu.Menu('Select a Difficulty', 1200, 900, theme=themes.THEME_DARK)
-        self.modeMenu = pygame_menu.Menu('Select a Mode', 1200, 900, theme=themes.THEME_DARK)
-        self.colorMenu = pygame_menu.Menu('Select Color of Player 1', 1200, 900, theme=themes.THEME_DARK)
-        self.highscoreMenu = pygame_menu.Menu('Highscores', 1200, 900, theme=themes.THEME_DARK)
 
         #Highscore laden
         self.highscore = Highscore(self.HIGHSCORE_FILE)
-        #ToDo Namen anpassen
-        #Initialisiert und öffnet Menü
-        self._menu()
+
+        #Initialisiert und öffnet Menü, bis START Variable auf True (d.h. Spielbeginn) zeige Menü
+        self.menu = Menu(self.screen)
+        while self.settings[0] == False:
+            self.settings = self.menu.get_settings()
+        self._start_game()
 
 
     #Initialisiert Spieler und Gegner und starte danach die unendliche Schleife für das Spiel
     def _start_game(self):
         #Spieler 1 initialisieren
-        self.player1 = Player((400, 300), self.bullets.append, self.COLOR_PLAYER1)
+        self.player1 = Player((400, 300), self.bullets.append, self.settings[2])
         #solange bis Variable Difficulty (Schwierigkeitsgrad = Anzahl Gegner) initialisiere Gegner
-        for _ in range(self.DIFFICULTY):
+        for _ in range(self.settings[4]):
             while True:
                 #bestimme Position des Gegners
                 position = get_random_position(self.screen)
@@ -74,7 +75,7 @@ class Asteroids:
             self.existing_enemies = self.existing_enemies + 1
 
         #Wenn Mehrspielermodus ausgewählt, initialisiere Spieler 2
-        if self.MODE == 2:
+        if self.settings[3] == 2:
             self.player2 = Player((400, 300), self.bullets.append, "player_turquoise")
 
         self.main_loop()
@@ -106,7 +107,7 @@ class Asteroids:
                 self.player1.shoot()
             #Wenn Mehrspielermodus ausgewählt und Leertaste gedrückt wird, schieße mit Spieler2
             if ( 
-                self.MODE == 2
+                self.settings[3] == 2
                 and event.type == pygame.KEYDOWN
                 and event.key == pygame.K_SPACE
             ):
@@ -123,7 +124,7 @@ class Asteroids:
             if is_key_pressed[pygame.K_UP]:
                 self.player1.accelerate()
         #Wenn Spieler2 existiert: rotiere im Uhrzeigersinn wenn D gedrückt, gegen Uhrzeigersinn wenn A gedrückt, beschleunige wenn W gedrückt
-        if self.MODE == 2:
+        if self.settings[3] == 2:
             if is_key_pressed[pygame.K_d]:
                 self.player2.rotate(clockwise=True)
             elif is_key_pressed[pygame.K_a]:
@@ -133,7 +134,7 @@ class Asteroids:
 
     #Logik hinter dem Spiel, wenn gewisse Ereignisse im Spiel passieren (z.B. Zusammenstoß)
     def _logic(self):
-        #ToDo
+        #Bewege jedes Objekt im Spiel
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
 
@@ -142,7 +143,7 @@ class Asteroids:
             self._hitPlayer(self.player1)
 
         #Wenn Mehrspielermodus aktiviert, prüfe ob Spieler2 getroffen wurde
-        if self.MODE == 2:
+        if self.settings[3] == 2:
             self._hitPlayer(self.player2)
 
         #Prüfe für alle Kugeln und alle Gegner, ob ein Gegner mit einer Kugel kollidiert, wenn ja:
@@ -166,7 +167,7 @@ class Asteroids:
         #Wenn kein Gegner mehr vorhanden, aber Spieler1 noch
         if not self.enemies and self.player1:
             #Füge neuen Score (falls hoch genug) dem Highscores hinzu
-            self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
+            self.highscore.setNewHighScore(self.settings[1], self.score)
             #Wenn es der beste Score allerzeiten ist, gebe dies aus
             if (self.highscore.getHighestScore() < self.score):
                 self.message = "You won! New highscore: " + str(self.score)
@@ -175,9 +176,9 @@ class Asteroids:
                 self.message = "You won! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
 
         #Wenn der unendliche Modus (d.h. ständige Generierung von Gegnern) ausgewählt wurde
-        if self.MODE == 3:
+        if self.settings[3] == 3:
             #mit einer Wahrscheinlichkeit von self.DIFFICULTY*0.0000000001 pro Frame und wenn es nicht mehr als SELF.DIFFICULTY+2 Gegner gibt, erstelle einen neuen Gegner
-            if random.randrange(0, 100) < self.DIFFICULTY*0.0000000001 and self.existing_enemies < self.DIFFICULTY+2 and self.player1: # self.DIFFICULTY*5% chance every frame
+            if random.randrange(0, 100) < self.settings[4]*0.0000000001 and self.existing_enemies < self.settings[4]+2 and self.player1: # self.DIFFICULTY*5% chance every frame
                 while True:
                     #bestimme Position des Gegners
                     position = get_random_position(self.screen)
@@ -218,7 +219,7 @@ class Asteroids:
     def _hitPlayer(self, player):
         #Überprüfe für alle Gegner, ob diese mit dem Spieler kollidiert sind
         for enemy in self.enemies:
-            if enemy.collides_with(player):
+            if enemy.collides_with(player) and self.lives > 0:
                 #zeige kurz einen roten Bildschirm, um "Schaden" zu verdeutlichen
                 pygame.draw.rect(self.screen, (255,0,0), pygame.Rect(0,0,1200,900))
                 pygame.display.flip()
@@ -234,7 +235,7 @@ class Asteroids:
                     #Lösche Spieler
                     player = None
                     #Füge wenn Score hoch genug, den Score in Highscore Liste ein
-                    self.highscore.setNewHighScore(self.PLAYERNAME, self.score)
+                    self.highscore.setNewHighScore(self.settings[1], self.score)
                     #Wenn es der höchste Score aller Zeiten ist, gebe dies aus
                     if (self.highscore.getHighestScore() < self.score):
                         self.message = "You lost! New highscore: " + str(self.score)
@@ -242,76 +243,15 @@ class Asteroids:
                     else:
                         self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
                     break
-	
-    def mode_btn(self):
-        self.mainMenu._open(self.modeMenu)
-     
-    def difficulty_btn(self):
-        self.mainMenu._open(self.difficultyMenu)
-        
-    def color_btn(self):
-        self.mainMenu._open(self.colorMenu)
-
-    def highscore_btn(self):
-        self.mainMenu._open(self.highscoreMenu)
-
-    #Anzahl der Asteroiden (= DIFFICULTY) ändern
-    def set_difficulty(self, value, difficulty) -> None:
-        self.DIFFICULTY = difficulty
-    
-    #Spielmodus ändern (1= Normal ein Spieler, bis alle Gegner entfernt; 2 = Mehrspieler, d.h. 2 Personen gemeinsam bis alle Gegner entfernt; 3 = endlos, d.h. es kommen immer wieder neue Gegner hinzu)
-    def set_mode(self, value, mode) -> None:
-        self.MODE = mode
-
-    #Farbe von Spieler1 ändern
-    def set_color(self, value, color) -> None:
-        self.COLOR_PLAYER1 = color
-
-    #Name von Spieler(n) ändern
-    def setPlayerName(self, name) -> None:
-        self.PLAYERNAME = name
-
-    #initialisieren aller Menus
-    def _menu(self):
-        #Eingabefeld für Spieler
-        self.mainMenu.add.text_input('Name: ', default='user', maxchar=20, onchange= self.setPlayerName)
-        #Knopf zum Starten des Spiels
-        self.mainMenu.add.button('Play', self._start_game)
-        #Knopf um Menu für Schwierigkeitseinstellung zu öffnen
-        self.mainMenu.add.button('Difficulty', self.difficulty_btn)
-        #Knopf um Menu für Moduseinstellung zu öffnen
-        self.mainMenu.add.button('Mode', self.mode_btn)
-        #Knopf um Menu für Farbeinstellung Spieler1 zu öffnen
-        self.mainMenu.add.button('Color', self.color_btn)
-        #Knopf um Highscore angezeigt zu bekommen
-        self.mainMenu.add.button('Highscore', self.highscore_btn)
-        #Knopf um Spiel zu beenden
-        #ToDo funktioniert dieser?
-        self.mainMenu.add.button('Quit', pygame_menu.events.EXIT)
-
-        #Menus konfigurieren, Selector -> Auswahlmenu zwischen verschiedenen Optionen mit Funktion bei Veränderung im Menu, Label als Textfeld ohne Einstellungsoptionen des Nutzers
-        self.difficultyMenu.add.selector('Difficulty :', [('Normal', 5), ('Hard', 8), ('Easy', 3)], onchange=self.set_difficulty)
-        self.modeMenu.add.selector('Mode :', [('Classic', 1), ('Two Players (Cooperative)', 2), ('Endless', 3)], onchange=self.set_mode)
-        self.colorMenu.add.selector('Color of Player 1 :', [('Blue', 'player_blue'), ('Green', 'player_green'), ('Red', 'player_red'), ('Pink', 'player_pink')], onchange=self.set_color)
-        self.highscoreMenu.add.label("Playername\tScore \n" + self.highscore.getAllHighScores())
-
-        #Schleife um das Menu anzuzeigen, wenn aktiviert
-        while True:
-            events = pygame.event.get()
-    
-            if self.mainMenu.is_enabled():
-                self.mainMenu.update(events)
-                self.mainMenu.draw(self.screen)
-    
-            pygame.display.update()
-
-    #ToDo
+	#Liste aller Objekte im Spiel (Gegner, Kugeln und mind. Spieler1, entsprechend Modus auch Spieler2 möglich)
     def _get_game_objects(self):
         game_objects = [*self.enemies, *self.bullets]
 
         if self.player1:
             game_objects.append(self.player1)
 
-        if self.MODE == 2:
+        if self.settings[3] == 2:
             game_objects.append(self.player2)
         return game_objects
+
+
