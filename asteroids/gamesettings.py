@@ -37,7 +37,7 @@ class Menu:
         #Eingabefeld für Spieler
         self.mainMenu.add.text_input('Name: ', default='user', maxchar=20, onchange= self.setPlayerName)
         #Knopf zum Starten des Spiels
-        self.mainMenu.add.button('Play', self._set_start)
+        self.mainMenu.add.button('Play', self.set_start)
         #Knopf um Menu für Schwierigkeitseinstellung zu öffnen
         self.mainMenu.add.button('Difficulty', self.difficulty_btn)
         #Knopf um Menu für Moduseinstellung zu öffnen
@@ -83,23 +83,23 @@ class Menu:
         self.mainMenu._open(self.highscoreMenu)
 
     #Setze die Optionsvariable Start auf True, d.h. beginne Spiel
-    def _set_start(self):
+    def set_start(self):
         self.settings[0] = True
 
     #Anzahl der Asteroiden (= DIFFICULTY) ändern
-    def set_difficulty(self, value, difficulty) -> None:
+    def set_difficulty(self, value, difficulty):
         self.settings[4] = difficulty
     
     #Spielmodus ändern (1= Normal ein Spieler, bis alle Gegner entfernt; 2 = Mehrspieler, d.h. 2 Personen gemeinsam bis alle Gegner entfernt; 3 = endlos, d.h. es kommen immer wieder neue Gegner hinzu)
-    def set_mode(self, value, mode) -> None:
+    def set_mode(self, value, mode):
         self.settings[3] = mode
 
     #Farbe von Spieler1 ändern
-    def set_color(self, value, color) -> None:
+    def set_color(self, value, color):
         self.settings[2] = color
 
     #Name von Spieler(n) ändern
-    def setPlayerName(self, name) -> None:
+    def setPlayerName(self, name):
         self.settings[1] = name
 
     def get_settings(self):

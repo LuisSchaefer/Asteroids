@@ -44,7 +44,7 @@ class Player(GameObject):
     def __init__(self, position, create_bullet_callback, color):
         self.create_bullet_callback = create_bullet_callback
         self.laser_sound = load_sound("laser")
-        # Make a copy of the original UP vector
+        # ToDo Make a copy of the original UP vector
         self.direction = Vector2(UP)
 
         super().__init__(position, load_sprite(color), Vector2(0))
@@ -85,7 +85,8 @@ class Player(GameObject):
 #Klasse für die Gegner im Spiel
 class Enemy(GameObject):
     #Initialisiere Gegner (Asteroid), zufällige Größe (nach Skala) & lade Bilddatei
-    def __init__(self, position):
+    def __init__(self,  position, create_asteroid_callback, size=3):
+        self.create_asteroid_callback = create_asteroid_callback
         self.size = random.randint(1,3)
 
         size_to_scale = {3: 1.25, 2: 1.0, 1: 0.75}

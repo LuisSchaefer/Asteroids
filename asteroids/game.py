@@ -1,5 +1,4 @@
-import pygame, pygame_menu
-from pygame_menu import themes
+import pygame
 from models import Enemy, Player
 from gamesettings import Menu, Highscore
 from utils import get_random_position, load_sprite, print_text, load_sound
@@ -243,6 +242,7 @@ class Asteroids:
                     else:
                         self.message = "You lost! Your score: " + str(self.score) +" Highscore: " + str(self.highscore.getHighestScore())
                     break
+
 	#Liste aller Objekte im Spiel (Gegner, Kugeln und mind. Spieler1, entsprechend Modus auch Spieler2 möglich)
     def _get_game_objects(self):
         game_objects = [*self.enemies, *self.bullets]

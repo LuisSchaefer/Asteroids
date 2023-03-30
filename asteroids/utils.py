@@ -21,7 +21,7 @@ def load_sound(name):
     path = f"assets/sounds/{name}.wav"
     return Sound(path)
 
-
+#Position in Vektor einbinden
 def wrap_position(position, surface):
     x, y = position
     w, h = surface.get_size()
